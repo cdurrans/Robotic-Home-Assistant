@@ -2,28 +2,13 @@
 #include <visualization_msgs/Marker.h>
 #include "nav_msgs/Odometry.h"
 #include <math.h>
-#include "std_msgs/String.h"
 
-std_msgs::String pick_up_objects_status;
-bool has_marker = false;
-int pick_up_goal = 0;
-int drop_off_goal = 1;
-int current_goal = pick_up_goal;
+float odom_x = 0.0;
+float odom_y = 0.0;
 
-void pick_up_status_callback(std_msgs::String status) {
-    ROS_INFO("Pick up Status Callback");
-    ROS_INFO("%s\n",status.data.c_str());
-    if (status.data == "Delivery") 
-    {
-      has_marker = true;
-      ROS_INFO("Has marker True");
-      current_goal = drop_off_goal;
-    }
-    if (status.data == "Pickup")
-    {
-      has_marker = false;
-    }
-    
+void odom_callback(const nav_msgs::Odometry::ConstPtr& msg) {
+    ::odom_x = msg->pose.pose.position.x;
+    ::odom_y = msg->pose.pose.position.y;
 }
 
 
@@ -33,13 +18,18 @@ int main( int argc, char** argv )
   ros::NodeHandle n;
   ros::Rate r(1);
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
-  ros::Subscriber pick_up_status_sub = n.subscribe("/pick_up_status", 2, pick_up_status_callback);
+  ros::Subscriber odometry_sub = n.subscribe("/odom", 200, odom_callback);
 
   // Set our initial shape type to be a cube
   uint32_t shape = visualization_msgs::Marker::CUBE;
 
   int number_goals = 2;
   float goal_targets[number_goals][3] = {{-1.0, 3.96396, -1.0},{0.44319102, -2.86513328, -1.0}};
+  int pick_up_goal = 0;
+  int drop_off_goal = 1;
+  int current_goal = pick_up_goal;
+  int goal_tolerance = 0.7;
+  bool has_marker = false;
   
   while (ros::ok())
   {
@@ -85,21 +75,41 @@ int main( int argc, char** argv )
       ROS_WARN_ONCE("Please create a subscriber to the marker");
       sleep(1);
     }
+    bool x_bool = false;
+    bool y_bool = false;
+    ROS_INFO("Odom data: %f, %f", odom_x, odom_y);
 
-  // if has marker delete marker
-  // if don't publish marker   
-    
+    if (fabs(odom_x - goal_targets[current_goal][0]) < goal_tolerance) 
+    {
+      x_bool = true;
+      ROS_INFO("x_bool is true.");
+    }
+    if (fabs(odom_y - goal_targets[current_goal][1]) < goal_tolerance)
+    {
+      y_bool = true;
+      ROS_INFO("y_bool is true.");
+    }
+    if (x_bool == true && y_bool == true)
+    {
+      if (current_goal == pick_up_goal) 
+      {
+        current_goal = drop_off_goal;
+        marker.action = visualization_msgs::Marker::DELETE;
+        marker_pub.publish(marker);
+        has_marker = true;
+      }
+      else 
+      {
+        current_goal = pick_up_goal;
+      }
+    }
+
     if (!has_marker) 
     {
       marker.pose.position.x = goal_targets[current_goal][0];
       marker.pose.position.y = goal_targets[current_goal][1];
       marker.pose.position.z = goal_targets[current_goal][2];
       marker.action = visualization_msgs::Marker::ADD;
-      marker_pub.publish(marker);
-    }
-    else 
-    {
-      marker.action = visualization_msgs::Marker::DELETE;
       marker_pub.publish(marker);
     }
     // Cycle between different shapes
