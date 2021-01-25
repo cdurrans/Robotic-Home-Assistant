@@ -1,5 +1,11 @@
 # Robotic-Home-Assistant
 
+Localization             |  Pick up
+:-------------------------:|:-------------------------:
+![preplan](/preplan.png)  |  ![pickup](/pickup.png)
+Delivery - In Transit | Drop off
+![deliver](/delivery.png)  |  ![dropoff](/dropoff.png)
+
 This project is the final project for Udacity's Robotics Software Engineer Nanodegree program. The goal was to create a map of my custom environment using SLAM, then use that map to plan a trajectory to pick up an object and place it somewhere else within the environment. The following are the steps I took and the ROS packages I used.
 
 ## Step 1: Setup the environment
@@ -31,3 +37,4 @@ I've included the test_navigation.sh script in which you can see the map and man
 ## Step 4: Create and Run the Home Assistant Script
 
 I've created pick_objects and add_markers catkin packages to simulate a home assistant that travels to a destination, picks up an object, and drops off the object at another destination. Run the script home_service.sh to see it.
+
